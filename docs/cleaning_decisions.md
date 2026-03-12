@@ -47,6 +47,25 @@ Every data cleaning choice documented here for transparency and reproducibility.
 | 3 | silver_reviews is a pass-through from Bronze | Steam is the only platform with reviews. No UNION needed, but kept as silver_ table for pipeline consistency — Gold queries read from silver_* tables. | 1,201,879 rows |
 | 4 | Player schema differences preserved with NULLs | PS: nickname + country. Steam: country + created. Xbox: nickname only. All columns included in silver_players; platforms missing a column get NULL. | Regional analysis limited to PS + Steam players (Xbox has no country) |
 
+## Gold Decisions
+
+| # | Decision | Rationale | Impact |
+|---|----------|-----------|--------|
+| 1 | platform_family mapping: PS3/PS4/PS5/PS Vita → 'ps' | silver tables use 'ps' but raw/overlap data preserves PS4/PS5 etc. platform_family bridges the naming gap for all Gold JOINs. | Required for every Gold query joining silver tables to gold_cross_platform_overlap |
+| 2 | Cross-platform matching by LOWER(TRIM(title)) | No shared game ID exists across platforms. Title-based matching is imperfect (subtitle variations, punctuation differences) but best available method. | Some false matches and missed matches expected; edge cases not manually corrected |
+| 3 | Latest price snapshot via ROW_NUMBER() PARTITION BY gameid ORDER BY date_acquired DESC | silver_prices has multiple snapshots per game over time. Analysis uses most recent price only. | One price per game for pricing analysis |
+| 4 | Pricing analysis covers paid games only | Zero free games appear in silver_prices (minimum $0.19). Free-to-play games either absent from price tables or have NULL USD values (filtered out). | Free-to-play segment not represented in pricing findings |
+| 5 | Price tier boundaries: <$5, $5-15, $15-30, $30-60, $60+ | Chosen to reflect natural pricing clusters in gaming (indie, mid-tier, AA, AAA, premium). Zero-padded labels for sort order. | 5 tiers for review-price analysis |
+| 6 | silver_history → silver_achievements bridge for gameid | silver_history has no gameid column. Must join through silver_achievements (achievementid → gameid) to connect achievement unlocks to games. | Two-hop join required for Q04 achievement patterns |
+| 7 | Achievement completion rate = unlocked / total per game | Per player-game pair. 1.0 = full completionist (100% of game's achievements unlocked). | Meaningful only for games with achievements defined in silver_achievements |
+| 8 | Genre analysis uses full genre string (not split) | Genre field stores arrays like "['Action', 'RPG']". Splitting into individual genres deferred to Python notebook. Gold tables use the composite string. | Some genre combinations have small sample sizes; splitting improves analysis |
+| 9 | Temporal analysis filtered to 2015+ with HAVING >= 50 | Focus on recent decade for relevance. Minimum 50 unlocks per month-platform-strategy group for statistical meaning. | Pre-2015 data excluded from temporal table |
+| 10 | Geographic analysis excludes Xbox entirely | Xbox has no country field in the dataset. Not a cleaning issue — the data was never collected. | Q05 and Q07 geographic findings cover PS + Steam only |
+| 11 | Top region in Q07 is per-platform, not per-strategy | A platform's top country doesn't change based on game strategy. Joining at platform level, not strategy level. | Same top_region value appears for all strategies within a platform |
+| 12 | Q07 reach_depth_quadrant: 50K players + 40% completion thresholds | Based on observed distribution midpoints. Classifies each strategy×platform into high/low reach × high/low depth. | 4-quadrant framework for launch decision |
+| 13 | Q07 review columns NULL for non-Steam rows | Review data exists only for Steam. PS and Xbox rows carry NULL for steam_avg_helpful, steam_reviews_per_game, steam_pct_with_awards. By design, not a bug. | Acknowledged asymmetry in methodology.md |
+| 14 | PS price averaged within platform_family for cross-platform delta | A game on both PS4 and PS5 may have different prices. AVG within 'ps' family gives a single PS price for comparison. | Minor smoothing effect on PS prices |
+
 ## Platform-Specific Decisions
 
 ### PlayStation
@@ -55,25 +74,32 @@ Every data cleaning choice documented here for transparency and reproducibility.
 | 1 | PS_GAMES has `platform` column (PS4/PS5) others don't | Preserve as-is in Bronze, normalize in Silver | Bronze/Silver |
 | 2 | PS_ACHIEVEMENTS uses `rarity` (STRING: Common, Rare, Ultra Rare, etc.) | Different metric than Xbox `points`; both preserved in silver_achievements with NULLs for missing platform | Silver |
 | 3 | PS_PURCHASED_GAMES `library` is JSON array of game IDs | Same format as Xbox. Parsed via JSON_EXTRACT_ARRAY + UNNEST at Silver. | Silver |
+| 4 | PS sub-platforms (PS3, PS4, PS5, PS Vita) mapped to 'ps' family | Required for cross-platform overlap detection. Original platform preserved in gold_cross_platform_overlap. | Gold |
 
 ### Steam
 | # | Decision | Rationale | Applied In |
 |---|----------|-----------|------------|
 | 1 | STEAM_PLAYERS has `created` (Timestamp) others don't | Account creation date; preserve, use where available | Bronze/Silver |
-| 2 | STEAM_REVIEWS is Steam-only | Entire basis for Task #3 (Review Impact) | All layers |
+| 2 | STEAM_REVIEWS is Steam-only | Entire basis for Task #3 (Review Impact) and Q06 review signals | All layers |
 | 3 | STEAM_ACHIEVEMENTS has no numeric value column | Unlike PS (rarity) and Xbox (points); binary completion only | Silver |
-| 4 | 54.2% of Steam purchased_games have NULL library | Possible privacy settings or data collection gap. Documented, excluded at Silver. | Silver |
+| 4 | 54.2% of Steam purchased_games have NULL library | Possible privacy settings or data collection gap. Documented, excluded at Silver. Potential selection bias acknowledged in methodology.md. | Silver/Gold |
 
 ### Xbox
 | # | Decision | Rationale | Applied In |
 |---|----------|-----------|------------|
 | 1 | XBOX_ACHIEVEMENTS uses `points` (FLOAT64) | Gamerscore system; different metric than PS rarity | Silver |
-| 2 | XBOX_PLAYERS has no `country` field | Regional analysis for Xbox not possible from this dataset | Silver |
+| 2 | XBOX_PLAYERS has no `country` field | Regional analysis for Xbox not possible from this dataset | Silver/Gold |
 | 3 | raw_prices_xbox.jpy was STRING (all other price cols FLOAT64) | Fixed by Task #5 Bronze with SAFE_CAST. Verified bronze_prices_xbox.jpy is FLOAT64. | Bronze (Task #5) |
 
 ## Task-Specific Decisions
 
-*Added as each task's Gold layer is built.*
+### Task #6 Gold: Key Cross-Cutting Findings
+
+| # | Finding | Cleaning/Design Implication |
+|---|---------|----------------------------|
+| 1 | PS platform values mismatch (silver uses 'ps', overlap preserves PS4/PS5) | Created platform_family column. All Gold JOINs use platform_family. Bug discovered when Q00 returned zero PS exclusives. |
+| 2 | silver_history has no gameid (only playerid, achievementid, date_acquired, platform) | All achievement-to-game analysis requires two-hop join: history → achievements → games. Bug discovered at Q04 runtime. |
+| 3 | Most players (~85-89%) have no library or achievement data | Medians are 0.0 across platforms. Engagement metrics represent the active minority (~11-17% with library, ~1-2% with achievements). |
 
 ---
 
