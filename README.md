@@ -75,6 +75,25 @@ Three models validated the patterns found in SQL:
 
 ![K-Means Clusters](charts/ml_kmeans_clusters.png)
 
+## Findings Summary
+
+| # | Finding | Evidence | Business Implication |
+|---|---------|----------|---------------------|
+| 1 | **85.5% of games are platform-exclusive** | 89,855 of ~105K unique titles are Steam-only | Multi-platform is a deliberate strategic choice, not the default |
+| 2 | **Multi-platform games cost 3× more** | Median $14.99 (multi) vs $4.99 (exclusive) | Higher production value justifies multi-platform investment |
+| 3 | **PlayStation is cheapest for the same game** | PS lowest price in 64.5% of 3-platform titles; Xbox only 5% | Cost-conscious players should default to PS for cross-platform titles |
+| 4 | **Steam = breadth, PlayStation = depth** | Steam: 148.9 avg games owned; PS: 1.69 achievements/game | Platform choice signals engagement model, not just audience size |
+| 5 | **PS exclusive players engage 85% deeper** | 420.9 vs 228.1 avg achievements (PS vs Steam exclusive) | PS exclusivity drives measurably deeper player commitment |
+| 6 | **Exclusives outperform multi-platform on completion — every platform** | PS exclusive 55.0% vs Steam multi_2 29.3% completion | Exclusivity correlates with higher per-player investment across all platforms |
+| 7 | **Multi-platform games get 5× more reviews** | 83.9 vs 17.4 reviews/game on Steam | Multi-platform visibility compounds through community feedback loops |
+| 8 | **COVID-19 boosted all platforms in 2020** | Visible spike across PS, Steam, Xbox achievement unlocks | External shocks can temporarily override structural platform differences |
+| 9 | **Xbox declining since 2021** | 1.23M unlocks (2021) → 808K (2024), a 34% drop | Xbox engagement is eroding — risky platform for depth-oriented launches |
+| 10 | **Geography predicts platform preference** | Spain 91% PS; Russia flips to Steam majority | Regional launch targeting should account for platform-market fit |
+| 11 | **Small markets engage deepest** | Estonia, Hong Kong, Czechia top engagement; 8/10 are PS | Niche EU markets offer highest per-player returns for PS exclusives |
+| 12 | **RPG genres generate most helpful reviews** | RPG combinations dominate Steam helpfulness rankings | RPG developers benefit most from Steam's review ecosystem |
+| 13 | **ML confirms the reach-depth divide** | RF, LR, K-Means all validate exclusive-vs-multi structure | The pattern is structural, not coincidental — it survives multiple model types |
+| 14 | **Thesis confirmed** | Multi = reach, exclusive = depth; Q07 quadrant framework | Every game publisher faces a binary strategic choice: audience size or engagement depth |
+
 ## Methodology
 
 **Thesis-first analysis.** The research question, success proxies, and output schema were defined before any Gold queries were written ([methodology.md](docs/methodology.md)).
