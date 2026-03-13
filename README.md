@@ -1,101 +1,155 @@
-# Gaming Platforms Synthesis
+# Cross-Platform Gaming Synthesis: Which Launch Strategy Maximizes Reach and Engagement?
 
-**Cross-cutting analysis connecting pricing, engagement, reviews, regional markets, and publisher strategy across Steam, PlayStation, and Xbox.**
+**One person. One 60GB dataset. Three platforms. Six analysis dimensions. A testable thesis with a concrete answer.**
 
-> *"If we were launching a game, which publisher model, region, price, and platform maximizes success?"*
+## The Question
 
----
+> If we were launching a game in 2025, which combination of platform strategy, pricing model, and target region maximizes player reach and engagement?
 
-## Project Overview
+## The Answer
 
-A synthesis analysis of the [Gaming Profiles 2025](https://www.kaggle.com/datasets/artyomkruglov/gaming-profiles-2025-steam-playstation-xbox) dataset — 60GB of player, game, pricing, achievement, and review data across three major gaming platforms. This project connects six analytical dimensions into one unified narrative.
+**Multi-platform = reach. Exclusive = depth. You likely can't have both.**
 
-| Dimension | What It Answers |
-|-----------|----------------|
-| **Price Competition** | How do pricing strategies differ across platforms? |
-| **Player Engagement** | What drives achievement completion behavior? |
-| **Review Impact** | Do reviews predict ownership? (Steam-only) |
-| **Regional Markets** | Which countries prefer which genres and platforms? |
-| **Publisher Strategy** | What separates top publishers from the rest? |
-| **Synthesis** | How do all dimensions interact? |
+![Reach vs Depth Quadrant](charts/q07_reach_vs_depth_quadrant.png)
 
-## Architecture
+- **For reach:** Go multi-platform. Each additional platform adds ~46K players. Multi-platform games get 5× more reviews on Steam.
+- **For depth:** Go PlayStation exclusive. PS players complete 55% of achievements vs 29–39% elsewhere. Exclusives outperform multi-platform on every platform.
+- **The tradeoff is structural** — multi-platform dilutes per-player engagement while maximizing total audience.
 
-### Data Pipeline
+## Key Findings
 
-```
-Kaggle CSVs → BigQuery Bronze (raw) → Silver (cleaned, normalized) → Gold (analysis-ready)
-```
+### The market is overwhelmingly single-platform
 
-**BigQuery project:** `fast-archive-478610-v8` / `gaming_project`
+85.5% of games never leave their platform. Only 8.4% of titles appear on 2+ platforms.
 
-### Tech Stack
+![Platform Strategy Distribution](charts/q00_platform_strategy_distribution.png)
 
-| Layer | Tools |
-|-------|-------|
-| Storage & SQL | Google BigQuery |
-| Analysis | Python, Pandas, scipy |
-| Visualization | Plotly |
-| ML | scikit-learn |
-| Version Control | Git / GitHub |
+### Multi-platform games cost 3× more
 
-## Repository Structure
+Median $14.99 for multi-platform vs $4.99 for exclusive. PlayStation is the cheapest platform for the same game 64.5% of the time.
+
+![Price Premium](charts/q02_price_premium_by_strategy.png)
+![Cheapest Platform](charts/q02_cheapest_platform.png)
+
+### Steam = breadth, PlayStation = depth
+
+Steam players average 148.9 games owned. PS players go deeper — 1.69 achievements per game, the highest ratio.
+
+![Engagement Profiles](charts/q03_engagement_breadth_vs_depth.png)
+
+### Exclusives win on completion — every platform
+
+PS exclusive games achieve 55.0% completion vs 29.3% for Steam multi-platform titles. The pattern holds across every platform×strategy combination.
+
+![Completion Rates](charts/q04_completion_by_platform_strategy.png)
+
+### COVID boosted everyone; Xbox is declining
+
+The 2020 bump is visible across all platforms. Xbox has declined from 1.23M unlocks (2021) to 808K (2024).
+
+![Temporal Trends](charts/q04_temporal_achievement_trends.png)
+
+### Geography predicts how you play
+
+Spain is 91% PlayStation. Russia flips to Steam majority. Small markets (Estonia, Hong Kong, Czechia) engage deepest — 8 of the top 10 are PlayStation.
+
+![Geographic Preferences](charts/q05_geographic_platform_preference.png)
+![Geographic Engagement](charts/q05_geographic_engagement_depth.png)
+
+### Multi-platform games get 5× more reviews
+
+83.9 reviews per game vs 17.4 for exclusives on Steam. Visibility begets visibility.
+
+![Reviews by Strategy](charts/q06_reviews_by_strategy.png)
+
+## Machine Learning Validation
+
+Three models validated the patterns found in SQL:
+
+**Random Forest + Logistic Regression** — predict whether a game goes multi-platform. All features (genre diversity, price, platform count) push toward multi-platform.
+
+![Feature Importance](charts/ml_rf_feature_importance.png)
+![LR Coefficients](charts/ml_lr_coefficients.png)
+
+**K-Means Clustering** — finds natural game segments without labels. Clusters align with the exclusive-vs-multi divide, confirming the structure is real.
+
+![K-Means Clusters](charts/ml_kmeans_clusters.png)
+
+## Methodology
+
+**Thesis-first analysis.** The research question, success proxies, and output schema were defined before any Gold queries were written ([methodology.md](docs/methodology.md)).
+
+**Three success proxies** (no revenue data exists):
+
+| Proxy | Lifecycle Phase | Source |
+|-------|----------------|--------|
+| Library presence | Acquisition | silver_purchased_games |
+| Achievement completion | Retention | silver_history + silver_achievements |
+| Review reception | Advocacy | silver_reviews (Steam only) |
+
+**Pipeline:** 19 raw CSV tables → 13 Bronze tables → 7 Silver tables → 14 Gold tables → Python notebook
+
+**Statistical rigor:** Welch's t-tests with Cohen's d (effect size) and 95% confidence intervals. With 100K+ observations, "significant" is easy — effect size is what matters.
+
+## Tech Stack
+
+- **BigQuery** — SQL pipeline (Bronze → Silver → Gold medallion architecture)
+- **Python/Pandas** — data manipulation and feature engineering
+- **Plotly** — interactive visualizations with consistent theming
+- **scipy** — statistical hypothesis testing
+- **scikit-learn** — Random Forest, Logistic Regression, K-Means
+
+## Project Structure
 
 ```
 gaming-platforms-synthesis/
 ├── README.md
 ├── sql/
-│   ├── bronze/          # Raw → Bronze layer scripts
-│   ├── silver/          # Bronze → Silver layer scripts
-│   └── gold/            # Analysis-ready queries
-├── notebooks/           # Colab analysis notebooks
-├── charts/              # Exported visualizations
-├── presentation/        # Final presentation
-└── docs/
-    ├── methodology.md
-    ├── cleaning_decisions.md
-    └── upload_mapping.md
+│   ├── bronze/          # Raw → cleaned tables (13 new + 6 reused)
+│   ├── silver/          # Platform-unified tables (7 tables, 90M+ rows)
+│   └── gold/            # Analysis queries (Q00–Q07, 14 output tables)
+├── notebooks/
+│   └── gaming_platforms_synthesis.ipynb   # Full analysis notebook
+├── charts/              # 15 exported PNG visualizations
+├── docs/
+│   ├── methodology.md   # Success framework + thesis
+│   ├── cleaning_decisions.md
+│   └── upload_mapping.md
+└── presentation/        # Final presentation
 ```
-
-## Dataset
-
-**Source:** [Gaming Profiles 2025](https://www.kaggle.com/datasets/artyomkruglov/gaming-profiles-2025-steam-playstation-xbox)
-
-**Scale:** 131,884+ games across Steam, PlayStation, and Xbox. 18 core tables covering games, prices, players, achievements, play history, purchased games, and reviews.
-
-| Platform | Tables |
-|----------|--------|
-| Steam | Games, Prices, Players, Achievements, History, Purchased Games, Reviews, Friends |
-| PlayStation | Games, Prices, Players, Achievements, History, Purchased Games |
-| Xbox | Games, Prices, Players, Achievements, History, Purchased Games |
-
-## Key Findings
-
-*Updated as analysis progresses.*
-
-## Methodology
-
-See [docs/methodology.md](docs/methodology.md) for detailed approach.
 
 ## How to Reproduce
 
-1. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/artyomkruglov/gaming-profiles-2025-steam-playstation-xbox)
-2. Upload CSVs into a BigQuery dataset (see [docs/upload_mapping.md](docs/upload_mapping.md))
-3. Run Bronze scripts in `sql/bronze/` in order
-4. Run Silver scripts in `sql/silver/` in order
-5. Run Gold scripts in `sql/gold/`
-6. Open notebook(s) in `notebooks/` for analysis and visualization
+1. Download the [Gaming Profiles 2025](https://www.kaggle.com/datasets/artyomkruglov/gaming-profiles-2025-steam-playstation-xbox) dataset from Kaggle
+2. Upload CSVs to BigQuery (`fast-archive-478610-v8` / `gaming_project`)
+3. Run SQL scripts in order: `sql/bronze/` → `sql/silver/` → `sql/gold/`
+4. Export Gold tables as CSV
+5. Open `notebooks/gaming_platforms_synthesis.ipynb` in Google Colab
+6. Mount Google Drive with CSVs and run all cells
+
+## Known Limitations
+
+- Reviews are **Steam-only** — advocacy proxy is asymmetric across platforms
+- **No revenue data** — success is behavioral, not financial
+- Cross-platform matching uses **title text** — no shared game ID exists
+- Xbox has **no country field** — geographic analysis covers PS + Steam only
+- **54.2% of Steam players** have NULL library data, excluded from analysis
 
 ## What I Learned
 
-*Updated as analysis progresses.*
+This project taught me the full analytical pipeline — from raw CSVs to a strategic recommendation backed by statistics and machine learning. Key lessons:
 
-## Related
+1. **Methodology before queries.** Defining the thesis before writing SQL prevents aimless exploration.
+2. **Silent bugs are the dangerous ones.** A platform value mismatch produced zero errors and completely wrong results. Validation means checking what's *in* the data, not just how much.
+3. **p-value alone is not enough.** With large samples, everything is "significant." Cohen's d answers the question that matters: *how big is the effect?*
+4. **Professional notebook patterns** (config blocks, helper functions, finding-as-title charts) compound — they save hours and signal competence to reviewers.
 
-- **Publisher Analysis (Task #5):** [gaming-publisher-analysis](https://github.com/YOUR_USERNAME/gaming-publisher-analysis) — standalone deep-dive into publisher strategy with 3 ML models
+## Dataset
 
-## Author
+**Source:** [Gaming Profiles 2025](https://www.kaggle.com/datasets/artyomkruglov/gaming-profiles-2025-steam-playstation-xbox) by Artyom Kruglov
 
-**Poi** — Data Analyst | [LinkedIn](YOUR_LINKEDIN_URL) | [GitHub](https://github.com/YOUR_USERNAME)
+131,884 games across Steam, PlayStation, and Xbox. 55M+ raw rows spanning games, players, achievements, purchase history, prices, and reviews.
 
-Built as a portfolio project during the Workintech Data Analyst → Data Scientist program (2025–2026).
+---
+
+*Built by Poi — Workintech Data Analyst Program — March 2026*
