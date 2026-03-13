@@ -94,6 +94,8 @@ Three models validated the patterns found in SQL:
 | 13 | **ML confirms the reach-depth divide** | RF, LR, K-Means all validate exclusive-vs-multi structure | The pattern is structural, not coincidental — it survives multiple model types |
 | 14 | **Thesis confirmed** | Multi = reach, exclusive = depth; Q07 quadrant framework | Every game publisher faces a binary strategic choice: audience size or engagement depth |
 
+**Detailed findings with business implications:** [`docs/findings_summary.md`](docs/findings_summary.md)
+
 ## Methodology
 
 **Thesis-first analysis.** The research question, success proxies, and output schema were defined before any Gold queries were written ([methodology.md](docs/methodology.md)).
@@ -130,11 +132,12 @@ gaming-platforms-synthesis/
 ├── notebooks/
 │   └── gaming_platforms_synthesis.ipynb   # Full analysis notebook
 ├── charts/              # 15 exported PNG visualizations
-├── docs/
-│   ├── methodology.md   # Success framework + thesis
-│   ├── cleaning_decisions.md
-│   └── upload_mapping.md
-└── presentation/        # Final presentation
+├── presentation/        # Final presentation (PPTX + PDF)
+└── docs/
+    ├── methodology.md   # Success framework + thesis
+    ├── cleaning_decisions.md
+    ├── upload_mapping.md
+    └── findings_summary.md  # Business-audience findings detail
 ```
 
 ## How to Reproduce
