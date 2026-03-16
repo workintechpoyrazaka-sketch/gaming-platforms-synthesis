@@ -71,8 +71,9 @@ Three models validated the patterns found in SQL:
 ![Feature Importance](charts/ml_rf_feature_importance.png)
 ![LR Coefficients](charts/ml_lr_coefficients.png)
 
-**K-Means Clustering** — finds natural game segments without labels. Clusters align with the exclusive-vs-multi divide, confirming the structure is real.
+**K-Means Clustering** — finds natural game segments without labels. The elbow method identified K=4 as optimal. Clusters align with the exclusive-vs-multi divide, confirming the structure is real.
 
+![Elbow Method](charts/ml_kmeans_elbow.png)
 ![K-Means Clusters](charts/ml_kmeans_clusters.png)
 
 ## Findings Summary
